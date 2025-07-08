@@ -51,9 +51,11 @@ jobs:
           fi
           
           # 输出changelog内容用于后续步骤
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            cat CHANGELOG.md
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create build directory
         run: |
@@ -89,7 +91,7 @@ jobs:
       - name: Generate self-extracting installer
         run: |
           # 创建自解压安装脚本
-          cat > dist/mac-init-installer-${{ steps.version.outputs.version }}.sh << 'INSTALLER_SCRIPT'
+          cat > dist/mac-init-installer-${{ steps.version.outputs.version }}.sh << 'EOF'
           #!/bin/bash
           # Mac Init Self-Extracting Installer
           # Version: ${{ steps.version.outputs.version }}
@@ -113,7 +115,7 @@ jobs:
           # 显示欢迎信息
           show_welcome() {
               echo -e "${CYAN}"
-              cat << 'EOF'
+              cat << 'WELCOME_EOF'
              __  __              ___       _ _   
             |  \/  |            |_ _|_ __ (_) |_ 
             | |\/| | __ _  ___   | || '_ \| | __|
@@ -121,7 +123,7 @@ jobs:
             |_|  |_|\__,_|\___| |___|_| |_|_|\__|
                                                 
                   Mac 电脑自动初始化工具
-          EOF
+          WELCOME_EOF
               echo -e "${NC}"
               echo -e "${BLUE}Mac Init Installer ${VERSION}${NC}"
               echo -e "${BLUE}一键配置你的 Mac，从全新系统到完美工作环境${NC}"
@@ -246,7 +248,7 @@ jobs:
           
           exit 0
           __ARCHIVE_BELOW__
-          INSTALLER_SCRIPT
+          EOF
           
           # 将压缩包数据以base64编码附加到脚本末尾
           base64 dist/mac-init-${{ steps.version.outputs.version }}.tar.gz >> dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
@@ -278,7 +280,7 @@ jobs:
 
       - name: Create quick install script
         run: |
-          cat > dist/install.sh << 'QUICK_INSTALL'
+          cat > dist/install.sh << 'EOF'
           #!/bin/bash
           # Mac Init Quick Installer
           # Downloads and runs the latest installer
@@ -302,7 +304,7 @@ jobs:
           
           chmod +x mac-init-installer.sh
           ./mac-init-installer.sh "$@"
-          QUICK_INSTALL
+          EOF
           
           chmod +x dist/install.sh
 
