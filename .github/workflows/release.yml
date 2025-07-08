@@ -284,8 +284,16 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum *.tar.gz *.sh > checksums.txt
-          sha512sum *.tar.gz *.sh > checksums-sha512.txt
+          # 使用macOS原生的shasum命令
+          shasum -a 256 *.tar.gz *.sh > checksums.txt
+          shasum -a 512 *.tar.gz *.sh > checksums-sha512.txt
+          
+          # 显示生成的校验和文件
+          echo "Generated checksums:"
+          cat checksums.txt
+          echo ""
+          echo "Generated SHA512 checksums:"
+          cat checksums-sha512.txt
 
       - name: Create quick install script
         run: |
