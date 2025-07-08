@@ -87,6 +87,10 @@ jobs:
           cd build
           tar -czf ../dist/mac-init-${{ steps.version.outputs.version }}.tar.gz mac-init/
           cd ..
+          
+          # 验证文件创建成功
+          ls -la dist/
+          echo "Created archive: dist/mac-init-${{ steps.version.outputs.version }}.tar.gz"
 
       - name: Generate self-extracting installer
         run: |
@@ -251,7 +255,12 @@ jobs:
           EOF
           
           # 将压缩包数据以base64编码附加到脚本末尾
-          base64 dist/mac-init-${{ steps.version.outputs.version }}.tar.gz >> dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+          if [[ ! -f "dist/mac-init-${{ steps.version.outputs.version }}.tar.gz" ]]; then
+            echo "Error: Source archive not found!"
+            exit 1
+          fi
+          
+          base64 -i dist/mac-init-${{ steps.version.outputs.version }}.tar.gz >> dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
           
           # 设置执行权限
           chmod +x dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
