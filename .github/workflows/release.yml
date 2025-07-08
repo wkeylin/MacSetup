@@ -65,37 +65,37 @@ jobs:
       - name: Prepare source files (exclude docs)
         run: |
           # 创建临时目录
-          mkdir -p build/mac-init
+          mkdir -p build/MacSetup
           
           # 复制核心文件和目录，排除docs
-          cp init.sh build/mac-init/
-          cp README.md build/mac-init/
-          cp CLAUDE.md build/mac-init/
-          cp -r scripts build/mac-init/
-          cp -r configs build/mac-init/
+          cp init.sh build/MacSetup/
+          cp README.md build/MacSetup/
+          cp CLAUDE.md build/MacSetup/
+          cp -r scripts build/MacSetup/
+          cp -r configs build/MacSetup/
           
           # 创建空的logs目录
-          mkdir -p build/mac-init/logs
+          mkdir -p build/MacSetup/logs
           
           # 创建版本信息文件
-          echo "${{ steps.version.outputs.version }}" > build/mac-init/VERSION
-          echo "Build date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> build/mac-init/VERSION
-          echo "Git commit: ${{ github.sha }}" >> build/mac-init/VERSION
+          echo "${{ steps.version.outputs.version }}" > build/MacSetup/VERSION
+          echo "Build date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> build/MacSetup/VERSION
+          echo "Git commit: ${{ github.sha }}" >> build/MacSetup/VERSION
 
       - name: Create source archive
         run: |
           cd build
-          tar -czf ../dist/mac-init-${{ steps.version.outputs.version }}.tar.gz mac-init/
+          tar -czf ../dist/MacSetup-${{ steps.version.outputs.version }}.tar.gz MacSetup/
           cd ..
           
           # 验证文件创建成功
           ls -la dist/
-          echo "Created archive: dist/mac-init-${{ steps.version.outputs.version }}.tar.gz"
+          echo "Created archive: dist/MacSetup-${{ steps.version.outputs.version }}.tar.gz"
 
       - name: Generate self-extracting installer
         run: |
           # 创建自解压安装脚本
-          cat > dist/mac-init-installer-${{ steps.version.outputs.version }}.sh << 'EOF'
+          cat > dist/MacSetup-installer-${{ steps.version.outputs.version }}.sh << 'EOF'
           #!/bin/bash
           # Mac Init Self-Extracting Installer
           # Version: ${{ steps.version.outputs.version }}
@@ -113,8 +113,8 @@ jobs:
           
           # 配置
           readonly VERSION="${{ steps.version.outputs.version }}"
-          readonly INSTALL_DIR="${MAC_INIT_DIR:-$HOME/mac-init}"
-          readonly TEMP_DIR="/tmp/mac-init-installer-$$"
+          readonly INSTALL_DIR="${MAC_INIT_DIR:-$HOME/MacSetup}"
+          readonly TEMP_DIR="/tmp/MacSetup-installer-$$"
           
           # 显示欢迎信息
           show_welcome() {
@@ -191,7 +191,7 @@ jobs:
               mkdir -p "$(dirname "$INSTALL_DIR")"
               
               # 移动文件
-              mv "$TEMP_DIR/mac-init" "$INSTALL_DIR"
+              mv "$TEMP_DIR/MacSetup" "$INSTALL_DIR"
               
               # 设置执行权限
               chmod +x "$INSTALL_DIR/init.sh"
@@ -255,30 +255,30 @@ jobs:
           EOF
           
           # 将压缩包数据以base64编码附加到脚本末尾
-          if [[ ! -f "dist/mac-init-${{ steps.version.outputs.version }}.tar.gz" ]]; then
+          if [[ ! -f "dist/MacSetup-${{ steps.version.outputs.version }}.tar.gz" ]]; then
             echo "Error: Source archive not found!"
             exit 1
           fi
           
-          base64 -i dist/mac-init-${{ steps.version.outputs.version }}.tar.gz >> dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+          base64 -i dist/MacSetup-${{ steps.version.outputs.version }}.tar.gz >> dist/MacSetup-installer-${{ steps.version.outputs.version }}.sh
           
           # 设置执行权限
-          chmod +x dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+          chmod +x dist/MacSetup-installer-${{ steps.version.outputs.version }}.sh
 
       - name: Create lite installer (without configs)
         run: |
           # 创建轻量版（仅核心脚本）
-          mkdir -p build/mac-init-lite
-          cp init.sh build/mac-init-lite/
-          cp -r scripts build/mac-init-lite/
-          mkdir -p build/mac-init-lite/configs/packages
-          mkdir -p build/mac-init-lite/configs/profiles
-          mkdir -p build/mac-init-lite/configs/system
-          mkdir -p build/mac-init-lite/logs
-          echo "${{ steps.version.outputs.version }}" > build/mac-init-lite/VERSION
+          mkdir -p build/MacSetup-lite
+          cp init.sh build/MacSetup-lite/
+          cp -r scripts build/MacSetup-lite/
+          mkdir -p build/MacSetup-lite/configs/packages
+          mkdir -p build/MacSetup-lite/configs/profiles
+          mkdir -p build/MacSetup-lite/configs/system
+          mkdir -p build/MacSetup-lite/logs
+          echo "${{ steps.version.outputs.version }}" > build/MacSetup-lite/VERSION
           
           cd build
-          tar -czf ../dist/mac-init-lite-${{ steps.version.outputs.version }}.tar.gz mac-init-lite/
+          tar -czf ../dist/MacSetup-lite-${{ steps.version.outputs.version }}.tar.gz MacSetup-lite/
           cd ..
 
       - name: Generate checksums
@@ -306,21 +306,21 @@ jobs:
           
           readonly REPO="${{ github.repository }}"
           readonly VERSION="${{ steps.version.outputs.version }}"
-          readonly INSTALLER_URL="https://github.com/${REPO}/releases/download/${VERSION}/mac-init-installer-${VERSION}.sh"
+          readonly INSTALLER_URL="https://github.com/${REPO}/releases/download/${VERSION}/MacSetup-installer-${VERSION}.sh"
           
           echo "Downloading Mac Init ${VERSION}..."
           
           if command -v curl >/dev/null 2>&1; then
-              curl -fsSL "$INSTALLER_URL" -o mac-init-installer.sh
+              curl -fsSL "$INSTALLER_URL" -o MacSetup-installer.sh
           elif command -v wget >/dev/null 2>&1; then
-              wget -q "$INSTALLER_URL" -O mac-init-installer.sh
+              wget -q "$INSTALLER_URL" -O MacSetup-installer.sh
           else
               echo "Error: Neither curl nor wget is available" >&2
               exit 1
           fi
           
-          chmod +x mac-init-installer.sh
-          ./mac-init-installer.sh "$@"
+          chmod +x MacSetup-installer.sh
+          ./MacSetup-installer.sh "$@"
           EOF
           
           chmod +x dist/install.sh
@@ -330,9 +330,9 @@ jobs:
         with:
           body: ${{ steps.changelog.outputs.changelog }}
           files: |
-            dist/mac-init-${{ steps.version.outputs.version }}.tar.gz
-            dist/mac-init-lite-${{ steps.version.outputs.version }}.tar.gz
-            dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+            dist/MacSetup-${{ steps.version.outputs.version }}.tar.gz
+            dist/MacSetup-lite-${{ steps.version.outputs.version }}.tar.gz
+            dist/MacSetup-installer-${{ steps.version.outputs.version }}.sh
             dist/install.sh
             dist/checksums.txt
             dist/checksums-sha512.txt
@@ -365,7 +365,7 @@ jobs:
           echo "curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Method 2: Download and run installer" >> $GITHUB_STEP_SUMMARY
-          echo "wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
-          echo "chmod +x mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
-          echo "./mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo "wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/MacSetup-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo "chmod +x MacSetup-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo "./MacSetup-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
