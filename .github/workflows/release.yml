@@ -1,0 +1,352 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 获取上一个tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          # 生成changelog
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "## What's Changed" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...${{ steps.version.outputs.version }}" >> CHANGELOG.md
+          else
+            echo "## What's Changed" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "Initial release of Mac Init - macOS automation tool" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"* %s (%h)" >> CHANGELOG.md
+          fi
+          
+          # 输出changelog内容用于后续步骤
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create build directory
+        run: |
+          mkdir -p build
+          mkdir -p dist
+
+      - name: Prepare source files (exclude docs)
+        run: |
+          # 创建临时目录
+          mkdir -p build/mac-init
+          
+          # 复制核心文件和目录，排除docs
+          cp init.sh build/mac-init/
+          cp README.md build/mac-init/
+          cp CLAUDE.md build/mac-init/
+          cp -r scripts build/mac-init/
+          cp -r configs build/mac-init/
+          
+          # 创建空的logs目录
+          mkdir -p build/mac-init/logs
+          
+          # 创建版本信息文件
+          echo "${{ steps.version.outputs.version }}" > build/mac-init/VERSION
+          echo "Build date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> build/mac-init/VERSION
+          echo "Git commit: ${{ github.sha }}" >> build/mac-init/VERSION
+
+      - name: Create source archive
+        run: |
+          cd build
+          tar -czf ../dist/mac-init-${{ steps.version.outputs.version }}.tar.gz mac-init/
+          cd ..
+
+      - name: Generate self-extracting installer
+        run: |
+          # 创建自解压安装脚本
+          cat > dist/mac-init-installer-${{ steps.version.outputs.version }}.sh << 'INSTALLER_SCRIPT'
+          #!/bin/bash
+          # Mac Init Self-Extracting Installer
+          # Version: ${{ steps.version.outputs.version }}
+          # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          set -euo pipefail
+          
+          # 颜色定义
+          readonly RED='\033[0;31m'
+          readonly GREEN='\033[0;32m'
+          readonly YELLOW='\033[1;33m'
+          readonly BLUE='\033[0;34m'
+          readonly CYAN='\033[0;36m'
+          readonly NC='\033[0m'
+          
+          # 配置
+          readonly VERSION="${{ steps.version.outputs.version }}"
+          readonly INSTALL_DIR="${MAC_INIT_DIR:-$HOME/mac-init}"
+          readonly TEMP_DIR="/tmp/mac-init-installer-$$"
+          
+          # 显示欢迎信息
+          show_welcome() {
+              echo -e "${CYAN}"
+              cat << 'EOF'
+             __  __              ___       _ _   
+            |  \/  |            |_ _|_ __ (_) |_ 
+            | |\/| | __ _  ___   | || '_ \| | __|
+            | |  | |/ _` |/ __|  | || | | | | |_ 
+            |_|  |_|\__,_|\___| |___|_| |_|_|\__|
+                                                
+                  Mac 电脑自动初始化工具
+          EOF
+              echo -e "${NC}"
+              echo -e "${BLUE}Mac Init Installer ${VERSION}${NC}"
+              echo -e "${BLUE}一键配置你的 Mac，从全新系统到完美工作环境${NC}"
+              echo ""
+          }
+          
+          # 检查系统要求
+          check_requirements() {
+              echo -e "${CYAN}检查系统要求...${NC}"
+              
+              # 检查macOS
+              if [[ "$OSTYPE" != "darwin"* ]]; then
+                  echo -e "${RED}错误: 此工具仅支持 macOS 系统${NC}" >&2
+                  exit 1
+              fi
+              
+              # 检查macOS版本
+              local current_version
+              current_version=$(sw_vers -productVersion)
+              echo -e "${GREEN}✓ macOS 版本: $current_version${NC}"
+              
+              # 检查磁盘空间
+              local available_gb
+              available_gb=$(df -g / | awk 'NR==2 {print $4}')
+              if [[ $available_gb -lt 2 ]]; then
+                  echo -e "${YELLOW}警告: 可用磁盘空间较少 (${available_gb}GB)${NC}"
+              else
+                  echo -e "${GREEN}✓ 磁盘空间: ${available_gb}GB 可用${NC}"
+              fi
+          }
+          
+          # 解压文件
+          extract_files() {
+              echo -e "${CYAN}解压安装文件...${NC}"
+              
+              # 创建临时目录
+              mkdir -p "$TEMP_DIR"
+              
+              # 找到压缩包数据的开始位置
+              local archive_start
+              archive_start=$(awk '/^__ARCHIVE_BELOW__$/{print NR + 1; exit 0; }' "$0")
+              
+              # 解压数据
+              tail -n +$archive_start "$0" | base64 -d | tar -xzf - -C "$TEMP_DIR"
+              
+              echo -e "${GREEN}✓ 文件解压完成${NC}"
+          }
+          
+          # 安装文件
+          install_files() {
+              echo -e "${CYAN}安装到 $INSTALL_DIR...${NC}"
+              
+              # 备份现有安装
+              if [[ -d "$INSTALL_DIR" ]]; then
+                  local backup_dir="${INSTALL_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+                  echo -e "${YELLOW}备份现有安装: $backup_dir${NC}"
+                  mv "$INSTALL_DIR" "$backup_dir"
+              fi
+              
+              # 创建安装目录
+              mkdir -p "$(dirname "$INSTALL_DIR")"
+              
+              # 移动文件
+              mv "$TEMP_DIR/mac-init" "$INSTALL_DIR"
+              
+              # 设置执行权限
+              chmod +x "$INSTALL_DIR/init.sh"
+              
+              echo -e "${GREEN}✓ 安装完成${NC}"
+          }
+          
+          # 显示完成信息
+          show_completion() {
+              echo ""
+              echo -e "${GREEN}🎉 Mac Init 安装完成！${NC}"
+              echo ""
+              echo -e "${CYAN}快速开始:${NC}"
+              echo -e "  cd $INSTALL_DIR"
+              echo -e "  ./init.sh"
+              echo ""
+              echo -e "${CYAN}或者使用配置方案:${NC}"
+              echo -e "  ./init.sh --profile developer"
+              echo -e "  ./init.sh --profile designer"
+              echo -e "  ./init.sh --profile basic"
+              echo ""
+              echo -e "${CYAN}更多帮助:${NC}"
+              echo -e "  ./init.sh --help"
+              echo ""
+          }
+          
+          # 清理函数
+          cleanup() {
+              if [[ -d "$TEMP_DIR" ]]; then
+                  rm -rf "$TEMP_DIR"
+              fi
+          }
+          
+          # 主函数
+          main() {
+              # 设置清理
+              trap cleanup EXIT
+              
+              show_welcome
+              check_requirements
+              extract_files
+              install_files
+              show_completion
+              
+              # 询问是否立即运行
+              echo -n "是否立即开始配置? [y/N]: "
+              read -r response
+              if [[ "$response" =~ ^[Yy] ]]; then
+                  cd "$INSTALL_DIR"
+                  exec ./init.sh
+              fi
+          }
+          
+          # 检查是否直接执行
+          if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+              main "$@"
+          fi
+          
+          exit 0
+          __ARCHIVE_BELOW__
+          INSTALLER_SCRIPT
+          
+          # 将压缩包数据以base64编码附加到脚本末尾
+          base64 dist/mac-init-${{ steps.version.outputs.version }}.tar.gz >> dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+          
+          # 设置执行权限
+          chmod +x dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+
+      - name: Create lite installer (without configs)
+        run: |
+          # 创建轻量版（仅核心脚本）
+          mkdir -p build/mac-init-lite
+          cp init.sh build/mac-init-lite/
+          cp -r scripts build/mac-init-lite/
+          mkdir -p build/mac-init-lite/configs/packages
+          mkdir -p build/mac-init-lite/configs/profiles
+          mkdir -p build/mac-init-lite/configs/system
+          mkdir -p build/mac-init-lite/logs
+          echo "${{ steps.version.outputs.version }}" > build/mac-init-lite/VERSION
+          
+          cd build
+          tar -czf ../dist/mac-init-lite-${{ steps.version.outputs.version }}.tar.gz mac-init-lite/
+          cd ..
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz *.sh > checksums.txt
+          sha512sum *.tar.gz *.sh > checksums-sha512.txt
+
+      - name: Create quick install script
+        run: |
+          cat > dist/install.sh << 'QUICK_INSTALL'
+          #!/bin/bash
+          # Mac Init Quick Installer
+          # Downloads and runs the latest installer
+          
+          set -euo pipefail
+          
+          readonly REPO="${{ github.repository }}"
+          readonly VERSION="${{ steps.version.outputs.version }}"
+          readonly INSTALLER_URL="https://github.com/${REPO}/releases/download/${VERSION}/mac-init-installer-${VERSION}.sh"
+          
+          echo "Downloading Mac Init ${VERSION}..."
+          
+          if command -v curl >/dev/null 2>&1; then
+              curl -fsSL "$INSTALLER_URL" -o mac-init-installer.sh
+          elif command -v wget >/dev/null 2>&1; then
+              wget -q "$INSTALLER_URL" -O mac-init-installer.sh
+          else
+              echo "Error: Neither curl nor wget is available" >&2
+              exit 1
+          fi
+          
+          chmod +x mac-init-installer.sh
+          ./mac-init-installer.sh "$@"
+          QUICK_INSTALL
+          
+          chmod +x dist/install.sh
+
+      - name: Update release with changelog and assets
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            dist/mac-init-${{ steps.version.outputs.version }}.tar.gz
+            dist/mac-init-lite-${{ steps.version.outputs.version }}.tar.gz
+            dist/mac-init-installer-${{ steps.version.outputs.version }}.sh
+            dist/install.sh
+            dist/checksums.txt
+            dist/checksums-sha512.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate installation statistics
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Generated Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cd dist
+          for file in *.tar.gz *.sh *.txt; do
+            if [[ -f "$file" ]]; then
+              size=$(ls -lh "$file" | awk '{print $5}')
+              echo "- **$file** ($size)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Install Commands" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Method 1: Direct installer download" >> $GITHUB_STEP_SUMMARY
+          echo "curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Method 2: Download and run installer" >> $GITHUB_STEP_SUMMARY
+          echo "wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo "chmod +x mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo "./mac-init-installer-${{ steps.version.outputs.version }}.sh" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
