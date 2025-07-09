@@ -1,0 +1,2 @@
+# MacSetup - App Store 应用配置
+# 语法: App Store ID:应用名称

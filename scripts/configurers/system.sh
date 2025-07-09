@@ -536,24 +536,24 @@ configure_system() {
 
 # 显示配置结果摘要
 show_configuration_summary() {
-    echo -e "\n${CYAN}=== 系统配置摘要 ===${NC}"
+    printf "\n%s=== 系统配置摘要 ===%s\n" "${CYAN}" "${NC}"
     
     if [[ ${#APPLIED_CONFIGS[@]} -gt 0 ]]; then
-        echo -e "${GREEN}成功应用的配置 (${#APPLIED_CONFIGS[@]} 项):${NC}"
+        printf "%s成功应用的配置 (%d 项):%s\n" "${GREEN}" "${#APPLIED_CONFIGS[@]}" "${NC}"
         for config in "${APPLIED_CONFIGS[@]}"; do
             echo "  ✅ $config"
         done
     fi
     
     if [[ ${#FAILED_CONFIGS[@]} -gt 0 ]]; then
-        echo -e "\n${RED}失败的配置 (${#FAILED_CONFIGS[@]} 项):${NC}"
+        printf "\n%s失败的配置 (%d 项):%s\n" "${RED}" "${#FAILED_CONFIGS[@]}" "${NC}"
         for config in "${FAILED_CONFIGS[@]}"; do
             echo "  ❌ $config"
         done
     fi
     
-    echo -e "\n${YELLOW}注意: 某些配置可能需要重启系统或重新登录才能完全生效${NC}"
-    echo -e "${BLUE}备份位置: $BACKUP_DEFAULTS_DIR${NC}"
+    printf "\n%s注意: 某些配置可能需要重启系统或重新登录才能完全生效%s\n" "${YELLOW}" "${NC}"
+    printf "%s备份位置: %s%s\n" "${BLUE}" "$BACKUP_DEFAULTS_DIR" "${NC}"
     echo ""
 }
 
@@ -579,7 +579,7 @@ reset_system_configuration() {
 
 # 交互式系统配置
 interactive_system_config() {
-    echo -e "\n${CYAN}=== 交互式系统配置 ===${NC}"
+    printf "\n%s=== 交互式系统配置 ===%s\n" "${CYAN}" "${NC}"
     
     local options=(
         "完整系统配置 (推荐)"

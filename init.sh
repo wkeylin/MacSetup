@@ -325,9 +325,11 @@ initialize_environment() {
     # 初始化日志系统
     local log_file="${LOG_FILE:-}"
     if [[ -z "$log_file" ]]; then
-        log_file="mac-init-$(date +%Y%m%d_%H%M%S).log"
+        # 使用一天一个文件的格式
+        log_file="macsetup-$(date +%Y%m%d).log"
     fi
-    setup_logging "$(pwd)/logs" "$log_file"
+    # 使用默认的临时目录（由 logger.sh 中的 DEFAULT_LOG_DIR 定义）
+    setup_logging "" "$log_file"
     
     # 初始化配置系统
     init_config_system
@@ -373,30 +375,50 @@ load_user_configuration() {
 
 # 应用命令行参数覆盖配置
 apply_command_line_overrides() {
-    # 覆盖安装选项
-    CONFIG_VALUES["INSTALL_HOMEBREW"]="$INSTALL_HOMEBREW"
-    CONFIG_VALUES["INSTALL_PACKAGES"]="$INSTALL_PACKAGES"
-    CONFIG_VALUES["INSTALL_CASKS"]="$INSTALL_CASKS"
-    CONFIG_VALUES["INSTALL_APPSTORE"]="$INSTALL_APPSTORE"
-    CONFIG_VALUES["CONFIGURE_SYSTEM"]="$CONFIGURE_SYSTEM"
-    CONFIG_VALUES["CONFIGURE_DOTFILES"]="$CONFIGURE_DOTFILES"
+    # 覆盖安装选项 (如果支持关联数组)
+    if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+        CONFIG_VALUES["INSTALL_HOMEBREW"]="$INSTALL_HOMEBREW"
+        CONFIG_VALUES["INSTALL_PACKAGES"]="$INSTALL_PACKAGES"
+        CONFIG_VALUES["INSTALL_CASKS"]="$INSTALL_CASKS"
+        CONFIG_VALUES["INSTALL_APPSTORE"]="$INSTALL_APPSTORE"
+        CONFIG_VALUES["CONFIGURE_SYSTEM"]="$CONFIGURE_SYSTEM"
+        CONFIG_VALUES["CONFIGURE_DOTFILES"]="$CONFIGURE_DOTFILES"
+    fi
     
     # 覆盖执行模式
     if [[ "$PACKAGES_ONLY" == "true" ]]; then
-        CONFIG_VALUES["CONFIGURE_SYSTEM"]="false"
-        CONFIG_VALUES["CONFIGURE_DOTFILES"]="false"
+        CONFIGURE_SYSTEM="false"
+        CONFIGURE_DOTFILES="false"
+        if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+            CONFIG_VALUES["CONFIGURE_SYSTEM"]="false"
+            CONFIG_VALUES["CONFIGURE_DOTFILES"]="false"
+        fi
     elif [[ "$CONFIG_ONLY" == "true" ]]; then
-        CONFIG_VALUES["INSTALL_HOMEBREW"]="false"
-        CONFIG_VALUES["INSTALL_PACKAGES"]="false"
-        CONFIG_VALUES["INSTALL_CASKS"]="false"
-        CONFIG_VALUES["INSTALL_APPSTORE"]="false"
+        INSTALL_HOMEBREW="false"
+        INSTALL_PACKAGES="false"
+        INSTALL_CASKS="false"
+        INSTALL_APPSTORE="false"
+        if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+            CONFIG_VALUES["INSTALL_HOMEBREW"]="false"
+            CONFIG_VALUES["INSTALL_PACKAGES"]="false"
+            CONFIG_VALUES["INSTALL_CASKS"]="false"
+            CONFIG_VALUES["INSTALL_APPSTORE"]="false"
+        fi
     elif [[ "$DOTFILES_ONLY" == "true" ]]; then
-        CONFIG_VALUES["INSTALL_HOMEBREW"]="false"
-        CONFIG_VALUES["INSTALL_PACKAGES"]="false"
-        CONFIG_VALUES["INSTALL_CASKS"]="false"
-        CONFIG_VALUES["INSTALL_APPSTORE"]="false"
-        CONFIG_VALUES["CONFIGURE_SYSTEM"]="false"
-        CONFIG_VALUES["CONFIGURE_DOTFILES"]="true"
+        INSTALL_HOMEBREW="false"
+        INSTALL_PACKAGES="false"
+        INSTALL_CASKS="false"
+        INSTALL_APPSTORE="false"
+        CONFIGURE_SYSTEM="false"
+        CONFIGURE_DOTFILES="true"
+        if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+            CONFIG_VALUES["INSTALL_HOMEBREW"]="false"
+            CONFIG_VALUES["INSTALL_PACKAGES"]="false"
+            CONFIG_VALUES["INSTALL_CASKS"]="false"
+            CONFIG_VALUES["INSTALL_APPSTORE"]="false"
+            CONFIG_VALUES["CONFIGURE_SYSTEM"]="false"
+            CONFIG_VALUES["CONFIGURE_DOTFILES"]="true"
+        fi
     fi
     
     log_debug "命令行参数已应用到配置"
@@ -410,17 +432,17 @@ apply_command_line_overrides() {
 show_welcome() {
     cat << 'EOF'
 
-   __  __              ___       _ _   
-  |  \/  |            |_ _|_ __ (_) |_ 
-  | |\/| | __ _  ___   | || '_ \| | __|
-  | |  | |/ _` |/ __|  | || | | | | |_ 
-  |_|  |_|\__,_|\___| |___|_| |_|_|\__|
-                                      
+   __  __            ____       _               
+  |  \/  | __ _  ___/ ___|  ___| |_ _   _ _ __   
+  | |\/| |/ _` |/ __\___ \ / _ \ __| | | | '_ \  
+  | |  | | (_| | (__ ___) |  __/ |_| |_| | |_) | 
+  |_|  |_|\__,_|\___|____/ \___|\__|\__,_| .__/  
+                                         |_|     
         Mac 电脑自动初始化工具
 
 EOF
     
-    echo -e "${BLUE}欢迎使用 Mac Init！${NC}"
+    printf "${BLUE}欢迎使用 MacSetup！${NC}\n"
     echo "此工具将帮助您快速配置您的 Mac 电脑"
     echo ""
 }
@@ -433,7 +455,7 @@ interactive_setup_wizard() {
         return 0
     fi
     
-    echo -e "${CYAN}=== 配置向导 ===${NC}"
+    printf "${CYAN}=== 配置向导 ===${NC}\n"
     
     # 选择配置方案
     if [[ -z "$PROFILE" ]]; then
@@ -455,7 +477,7 @@ interactive_setup_wizard() {
 
 # 选择配置方案
 select_configuration_profile() {
-    echo -e "\n请选择配置方案:"
+    printf "\n请选择配置方案:\n"
     
     local profiles=(
         "默认配置 (基础软件和设置)"
@@ -495,7 +517,7 @@ select_configuration_profile() {
 
 # 自定义配置向导
 custom_configuration_wizard() {
-    echo -e "\n${CYAN}=== 自定义配置 ===${NC}"
+    printf "\n${CYAN}=== 自定义配置 ===${NC}\n"
     
     # 软件安装选项
     echo "软件安装选项:"
@@ -509,7 +531,7 @@ custom_configuration_wizard() {
     INSTALL_APPSTORE=$(confirm "安装 App Store 应用" "n" && echo "true" || echo "false")
     
     # 系统配置选项
-    echo -e "\n系统配置选项:"
+    printf "\n系统配置选项:\n"
     CONFIGURE_SYSTEM=$(confirm "配置系统设置 (Dock, Finder 等)" "y" && echo "true" || echo "false")
     CONFIGURE_DOTFILES=$(confirm "安装配置文件 (dotfiles)" "n" && echo "true" || echo "false")
 }
@@ -520,7 +542,7 @@ confirm_installation_options() {
         return 0
     fi
     
-    echo -e "\n${CYAN}=== 安装选项确认 ===${NC}"
+    printf "\n${CYAN}=== 安装选项确认 ===${NC}\n"
     show_current_config
     
     if ! confirm "这些配置是否正确" "y"; then
@@ -531,10 +553,10 @@ confirm_installation_options() {
 
 # 显示安装预览
 show_installation_preview() {
-    echo -e "\n${CYAN}=== 安装预览 ===${NC}"
+    printf "\n${CYAN}=== 安装预览 ===${NC}\n"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        echo -e "${YELLOW}⚠️  预览模式 - 不会实际执行安装${NC}"
+        printf "${YELLOW}⚠️  预览模式 - 不会实际执行安装${NC}\n"
     fi
     
     local steps=()
@@ -656,15 +678,15 @@ execute_with_dry_run() {
 show_installation_summary() {
     local duration="$1"
     
-    echo -e "\n${GREEN}🎉 Mac 初始化完成！${NC}"
-    echo -e "${BLUE}总耗时: ${duration}秒${NC}"
+    printf "\n${GREEN}🎉 Mac 初始化完成！${NC}\n"
+    printf "${BLUE}总耗时: ${duration}秒${NC}\n"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        echo -e "${YELLOW}注意: 这是预览模式，未实际执行安装${NC}"
+        printf "${YELLOW}注意: 这是预览模式，未实际执行安装${NC}\n"
         return 0
     fi
     
-    echo -e "\n${CYAN}=== 安装摘要 ===${NC}"
+    printf "\n${CYAN}=== 安装摘要 ===${NC}\n"
     
     # 显示安装的软件统计
     if command -v brew &> /dev/null; then
@@ -677,10 +699,10 @@ show_installation_summary() {
     fi
     
     # 显示日志文件位置
-    echo -e "\n${BLUE}详细日志: $LOG_FILE_PATH${NC}"
+    printf "\n${BLUE}详细日志: $LOG_FILE_PATH${NC}\n"
     
     # 显示下一步建议
-    echo -e "\n${CYAN}建议的下一步操作:${NC}"
+    printf "\n${CYAN}建议的下一步操作:${NC}\n"
     echo "1. 重启终端或重新登录以确保环境变量生效"
     echo "2. 运行 brew doctor 检查 Homebrew 状态"
     echo "3. 检查系统偏好设置确认配置已生效"
@@ -719,7 +741,7 @@ main() {
     # 生成日志统计
     log_statistics
     
-    log_success "Mac Init 执行完成！"
+    log_success "MacSetup 执行完成！"
 }
 
 # =============================================================================
@@ -732,7 +754,7 @@ handle_error() {
     log_error "脚本执行过程中发生错误 (退出码: $exit_code)"
     
     if [[ -n "${LOG_FILE_PATH:-}" ]]; then
-        echo -e "\n${RED}详细错误信息请查看日志文件: $LOG_FILE_PATH${NC}"
+        printf "\n${RED}详细错误信息请查看日志文件: $LOG_FILE_PATH${NC}\n"
         show_recent_errors 5
     fi
     

@@ -128,7 +128,7 @@ use_remote_config() {
 list_community_configs() {
     log_info "获取社区配置列表..."
     
-    local registry_file="/tmp/mac-init-registry.json"
+    local registry_file="/tmp/macsetup-registry.json"
     
     if download_file "$CONFIG_REGISTRY" "$registry_file" 2; then
         log_info "可用的社区配置:"
@@ -166,7 +166,7 @@ except Exception as e:
 install_community_config() {
     local config_name="$1"
     
-    local registry_file="/tmp/mac-init-registry.json"
+    local registry_file="/tmp/macsetup-registry.json"
     
     if ! download_file "$CONFIG_REGISTRY" "$registry_file" 2; then
         log_error "无法获取配置注册表"

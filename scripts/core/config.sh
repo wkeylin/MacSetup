@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# Mac Init - 配置管理系统
+# MacSetup - 配置管理系统
 # =============================================================================
 
 set -euo pipefail
@@ -19,21 +19,39 @@ fi
 # 配置文件路径定义
 # =============================================================================
 
-readonly CONFIG_ROOT="${SCRIPT_DIR:-$(pwd)}/configs"
-readonly PACKAGES_DIR="$CONFIG_ROOT/packages"
-readonly DOTFILES_DIR="$CONFIG_ROOT/dotfiles"
-readonly SYSTEM_DIR="$CONFIG_ROOT/system"
-readonly PROFILES_DIR="$CONFIG_ROOT/profiles"
-
-# 默认配置文件
-readonly DEFAULT_HOMEBREW_FILE="$PACKAGES_DIR/homebrew.txt"
-readonly DEFAULT_CASK_FILE="$PACKAGES_DIR/cask.txt"
-readonly DEFAULT_APPSTORE_FILE="$PACKAGES_DIR/appstore.txt"
-readonly DEFAULT_SYSTEM_CONFIG="$SYSTEM_DIR/defaults.sh"
+if [[ -z "${CONFIG_ROOT:-}" ]]; then
+    readonly CONFIG_ROOT="${SCRIPT_DIR:-$(pwd)}/configs"
+    readonly PACKAGES_DIR="$CONFIG_ROOT/packages"
+    readonly DOTFILES_DIR="$CONFIG_ROOT/dotfiles"
+    readonly SYSTEM_DIR="$CONFIG_ROOT/system"
+    readonly PROFILES_DIR="$CONFIG_ROOT/profiles"
+    readonly TEMPLATES_DIR="$CONFIG_ROOT/templates"
+    
+    # 默认配置文件
+    readonly DEFAULT_HOMEBREW_FILE="$PACKAGES_DIR/homebrew.txt"
+    readonly DEFAULT_CASK_FILE="$PACKAGES_DIR/cask.txt"
+    readonly DEFAULT_APPSTORE_FILE="$PACKAGES_DIR/appstore.txt"
+    readonly DEFAULT_SYSTEM_CONFIG="$SYSTEM_DIR/defaults.sh"
+    
+    # 默认配置模板
+    readonly DEFAULT_HOMEBREW_TEMPLATE="$TEMPLATES_DIR/homebrew.txt"
+    readonly DEFAULT_CASK_TEMPLATE="$TEMPLATES_DIR/cask.txt"
+    readonly DEFAULT_APPSTORE_TEMPLATE="$TEMPLATES_DIR/appstore.txt"
+fi
 
 # 全局配置变量
-declare -A CONFIG_VALUES
-declare -A CONFIG_FILES
+if [[ -z "${CONFIG_VALUES_INITIALIZED:-}" ]]; then
+    if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+        declare -A CONFIG_VALUES
+        declare -A CONFIG_FILES
+    fi
+    CONFIG_VALUES_INITIALIZED=1
+fi
+
+# 进度显示配置
+if [[ -z "${SHOW_BREW_OUTPUT:-}" ]]; then
+    readonly SHOW_BREW_OUTPUT="${SHOW_BREW_OUTPUT:-true}"  # true, false
+fi
 CURRENT_PROFILE=""
 
 # =============================================================================
@@ -49,6 +67,7 @@ init_config_system() {
     safe_mkdir "$DOTFILES_DIR"
     safe_mkdir "$SYSTEM_DIR"
     safe_mkdir "$PROFILES_DIR"
+    safe_mkdir "$TEMPLATES_DIR"
     
     # 创建默认配置文件
     create_default_configs
@@ -58,66 +77,96 @@ init_config_system() {
 
 # 创建默认配置文件
 create_default_configs() {
-    # 创建默认的Homebrew包列表
-    if [[ ! -f "$DEFAULT_HOMEBREW_FILE" ]]; then
-        cat > "$DEFAULT_HOMEBREW_FILE" << 'EOF'
-# Mac Init - Homebrew 包配置
-# 语法: 每行一个包名，支持 # 注释
-
-# 基础工具
-git                    # 版本控制系统
-wget                   # 文件下载工具
-curl                   # HTTP客户端
-tree                   # 目录树显示
-htop                   # 系统监控
-
-# 开发工具
-node                   # Node.js运行时
-python3                # Python 3
-go                     # Go语言
-EOF
-        log_info "创建默认Homebrew配置: $DEFAULT_HOMEBREW_FILE"
+    # 检查文件权限并尝试修复
+    check_and_fix_permissions() {
+        local file="$1"
+        if [[ -f "$file" ]]; then
+            if [[ ! -r "$file" ]]; then
+                log_warn "配置文件权限异常: $file"
+                log_warn "文件所有者: $(ls -l "$file" | awk '{print $3":"$4}')"
+                log_warn "当前用户: $(whoami)"
+                if [[ -w "$(dirname "$file")" ]]; then
+                    log_info "尝试创建新的配置文件..."
+                    return 1  # 需要重新创建
+                fi
+            else
+                # 文件存在且可读，检查是否有内容
+                if [[ -s "$file" ]]; then
+                    return 0  # 文件正常且非空
+                else
+                    log_warn "配置文件为空: $file"
+                    return 1  # 需要重新创建
+                fi
+            fi
+        fi
+        return 1  # 文件不存在，需要创建
+    }
+    
+    # 从模板复制配置文件
+    copy_from_template() {
+        local template_file="$1"
+        local target_file="$2"
+        local config_name="$3"
+        
+        if [[ -f "$template_file" ]]; then
+            cp "$template_file" "$target_file"
+            log_info "从模板创建${config_name}配置: $target_file"
+            return 0
+        else
+            log_error "模板文件不存在: $template_file"
+            log_error "请检查 configs/templates/ 目录是否完整"
+            return 1
+        fi
+    }
+    
+    # 检查并创建默认的Homebrew包列表
+    if ! check_and_fix_permissions "$DEFAULT_HOMEBREW_FILE"; then
+        # 确保目录存在且有写权限
+        if [[ ! -w "$PACKAGES_DIR" ]]; then
+            log_warn "包配置目录没有写权限: $PACKAGES_DIR"
+            return 1
+        fi
+        
+        # 从模板复制配置文件
+        if ! copy_from_template "$DEFAULT_HOMEBREW_TEMPLATE" "$DEFAULT_HOMEBREW_FILE" "Homebrew"; then
+            log_error "无法创建Homebrew配置文件"
+            return 1
+        fi
     fi
     
-    # 创建默认的Cask列表
-    if [[ ! -f "$DEFAULT_CASK_FILE" ]]; then
-        cat > "$DEFAULT_CASK_FILE" << 'EOF'
-# Mac Init - Homebrew Cask 应用配置
-# 语法: 每行一个应用名，支持 # 注释
-
-# 开发工具
-visual-studio-code     # 代码编辑器
-iterm2                 # 终端模拟器
-docker                 # 容器平台
-
-# 日常应用
-google-chrome          # 浏览器
-firefox               # 浏览器备选
-EOF
-        log_info "创建默认Cask配置: $DEFAULT_CASK_FILE"
+    # 检查并创建默认的Cask列表
+    if ! check_and_fix_permissions "$DEFAULT_CASK_FILE"; then
+        if [[ ! -w "$PACKAGES_DIR" ]]; then
+            log_warn "包配置目录没有写权限: $PACKAGES_DIR"
+            return 1
+        fi
+        
+        # 从模板复制配置文件
+        if ! copy_from_template "$DEFAULT_CASK_TEMPLATE" "$DEFAULT_CASK_FILE" "Cask"; then
+            log_error "无法创建Cask配置文件"
+            return 1
+        fi
     fi
     
-    # 创建默认的App Store列表
-    if [[ ! -f "$DEFAULT_APPSTORE_FILE" ]]; then
-        cat > "$DEFAULT_APPSTORE_FILE" << 'EOF'
-# Mac Init - App Store 应用配置
-# 语法: App Store ID:应用名称
-
-# 开发工具
-497799835:Xcode        # Apple开发工具
-
-# 实用工具
-409183694:Keynote      # 演示文稿
-409201541:Pages        # 文档编辑
-EOF
-        log_info "创建默认App Store配置: $DEFAULT_APPSTORE_FILE"
+    # 检查并创建默认的App Store列表
+    if ! check_and_fix_permissions "$DEFAULT_APPSTORE_FILE"; then
+        if [[ ! -w "$PACKAGES_DIR" ]]; then
+            log_warn "包配置目录没有写权限: $PACKAGES_DIR"
+            return 1
+        fi
+        
+        # 从模板复制配置文件
+        if ! copy_from_template "$DEFAULT_APPSTORE_TEMPLATE" "$DEFAULT_APPSTORE_FILE" "App Store"; then
+            log_error "无法创建App Store配置文件"
+            return 1
+        fi
     fi
     
     # 创建默认系统配置
     if [[ ! -f "$DEFAULT_SYSTEM_CONFIG" ]]; then
         cat > "$DEFAULT_SYSTEM_CONFIG" << 'EOF'
 #!/bin/bash
-# Mac Init - 系统默认配置
+# MacSetup - 系统默认配置
 
 # Dock设置
 defaults write com.apple.dock "tilesize" -int "48"
@@ -244,7 +293,14 @@ load_profile() {
             local value="${BASH_REMATCH[2]}"
             # 移除引号
             value=$(echo "$value" | sed 's/^"//;s/"$//')
-            CONFIG_VALUES["$key"]="$value"
+            
+            # 如果支持关联数组，则使用CONFIG_VALUES
+            if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+                CONFIG_VALUES["$key"]="$value"
+            fi
+            
+            # 同时设置为普通变量以便向后兼容
+            eval "$key=\"$value\""
             log_debug "配置项: $key = $value"
         fi
     done < "$profile_file"
@@ -268,7 +324,7 @@ create_profile() {
     log_step_start "创建配置方案" "$profile_name"
     
     cat > "$profile_file" << EOF
-# Mac Init 配置方案: $profile_name
+# MacSetup 配置方案: $profile_name
 # 创建时间: $(date '+%Y-%m-%d %H:%M:%S')
 
 # 软件包配置文件
@@ -320,8 +376,8 @@ list_profiles() {
         local description=""
         
         # 尝试从文件中提取描述
-        if grep -q "^# Mac Init 配置方案:" "$profile_file" 2>/dev/null; then
-            description=$(grep "^# Mac Init 配置方案:" "$profile_file" | cut -d: -f2- | sed 's/^[[:space:]]*//')
+        if grep -q "^# MacSetup 配置方案:" "$profile_file" 2>/dev/null; then
+            description=$(grep "^# MacSetup 配置方案:" "$profile_file" | cut -d: -f2- | sed 's/^[[:space:]]*//')
         fi
         
         echo "  - $profile_name${description:+ ($description)}"
@@ -454,10 +510,21 @@ get_config() {
     local key="$1"
     local default_value="${2:-}"
     
-    if [[ -n "${CONFIG_VALUES[$key]:-}" ]]; then
-        echo "${CONFIG_VALUES[$key]}"
+    # 检查是否支持关联数组
+    if [[ "${BASH_VERSION%%.*}" -ge 4 ]]; then
+        if [[ -n "${CONFIG_VALUES[$key]:-}" ]]; then
+            echo "${CONFIG_VALUES[$key]}"
+        else
+            echo "$default_value"
+        fi
     else
-        echo "$default_value"
+        # 对于旧版本bash，使用eval获取变量值
+        local value
+        if eval "value=\${$key:-}"; then
+            echo "${value:-$default_value}"
+        else
+            echo "$default_value"
+        fi
     fi
 }
 
@@ -515,7 +582,7 @@ get_system_config_file() {
 
 # 显示当前配置
 show_current_config() {
-    echo -e "\n${CYAN}=== 当前配置信息 ===${NC}"
+    printf "\n%s=== 当前配置信息 ===%s\n" "${CYAN}" "${NC}"
     
     if [[ -n "$CURRENT_PROFILE" ]]; then
         echo "配置方案: $CURRENT_PROFILE"
@@ -528,7 +595,7 @@ show_current_config() {
     echo "App Store配置文件: $(get_appstore_file)"
     echo "系统配置文件: $(get_system_config_file)"
     
-    echo -e "\n安装选项:"
+    printf "\n安装选项:\n"
     echo "  Homebrew包: $(get_config 'INSTALL_HOMEBREW' 'true')"
     echo "  Cask应用: $(get_config 'INSTALL_CASKS' 'true')"
     echo "  App Store应用: $(get_config 'INSTALL_APPSTORE' 'false')"

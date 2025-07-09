@@ -1,8 +1,8 @@
-# Mac Init 故障排除指南
+# MacSetup 故障排除指南
 
 ## 概述
 
-本指南涵盖了使用 Mac Init 过程中可能遇到的常见问题及其解决方案。建议按照问题分类查找对应的解决方法。
+本指南涵盖了使用 MacSetup 过程中可能遇到的常见问题及其解决方案。建议按照问题分类查找对应的解决方法。
 
 ## 目录
 
@@ -74,7 +74,7 @@ which brew
 
 # 清理可能的缓存
 rm -rf ~/.cache/Homebrew
-rm -rf /tmp/mac-init-*
+rm -rf /tmp/macsetup-*
 ```
 
 ---
@@ -279,7 +279,7 @@ brew install --cask app-name
 ### 3.3 批量安装问题
 
 #### 问题：部分包安装失败但脚本继续
-**这是正常行为**，Mac Init 会继续安装其他包并在最后报告失败的包。
+**这是正常行为**，MacSetup 会继续安装其他包并在最后报告失败的包。
 
 **查看失败详情**:
 ```bash
@@ -287,8 +287,8 @@ brew install --cask app-name
 ./init.sh --packages-only --verbose --log-file debug.log
 
 # 查看日志中的错误信息
-grep -i error logs/debug.log
-grep -i failed logs/debug.log
+grep -i error $TMPDIR/macsetup-logs/macsetup-*.log
+grep -i failed $TMPDIR/macsetup-logs/macsetup-*.log
 ```
 
 **手动安装失败的包**:
@@ -357,13 +357,13 @@ csrutil status
 **解决方案**:
 ```bash
 # 检查备份文件
-ls -la ~/.mac-init-backup-*/system-defaults/
+ls -la ~/.macsetup-backup-*/system-defaults/
 
 # 手动验证备份文件
-plutil -lint ~/.mac-init-backup-*/system-defaults/com.apple.dock.plist
+plutil -lint ~/.macsetup-backup-*/system-defaults/com.apple.dock.plist
 
 # 手动恢复单个设置
-defaults import com.apple.dock ~/.mac-init-backup-*/system-defaults/com.apple.dock.plist
+defaults import com.apple.dock ~/.macsetup-backup-*/system-defaults/com.apple.dock.plist
 ```
 
 ---
@@ -410,7 +410,7 @@ export http_proxy=http://proxy.company.com:8080
 
 #### 问题：杀毒软件阻止脚本执行
 **解决方案**:
-- 将 Mac Init 目录添加到杀毒软件白名单
+- 将 MacSetup 目录添加到杀毒软件白名单
 - 暂时禁用实时保护（安装完成后重新启用）
 - 使用 `--dry-run` 模式先检查要执行的操作
 
@@ -526,10 +526,10 @@ top -o MEM
 find . -name "*.log" -type f
 
 # 查看日志大小
-ls -lh logs/
+ls -lh $TMPDIR/macsetup-logs/
 
 # 清理旧日志
-find logs/ -name "*.log" -mtime +7 -delete
+find $TMPDIR/macsetup-logs/ -name "*.log" -mtime +7 -delete
 
 # 设置自定义日志位置
 ./init.sh --log-file /tmp/my-install.log
@@ -622,19 +622,19 @@ killall Finder
 
 ### 9.2 完全重置
 
-#### 问题：需要完全清理 Mac Init 的所有更改
+#### 问题：需要完全清理 MacSetup 的所有更改
 **解决方案**:
 ```bash
 # 卸载 Homebrew（如果需要）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
 
 # 恢复系统配置
-rm -rf ~/.mac-init-backup-*  # 谨慎操作
+rm -rf ~/.macsetup-backup-*  # 谨慎操作
 # 注销重新登录
 
-# 清理 Mac Init 文件
-rm -rf mac-init/
-rm -rf ~/.mac-init-*
+# 清理 MacSetup 文件
+rm -rf macsetup/
+rm -rf ~/.macsetup-*
 
 # 重置 shell 配置
 # 编辑 ~/.zshrc 或 ~/.bash_profile，移除 Homebrew 相关行
@@ -654,12 +654,12 @@ sw_vers
 uname -a
 system_profiler SPSoftwareDataType
 
-# Mac Init 版本和配置
+# MacSetup 版本和配置
 ./init.sh --version
 cat configs/profiles/your-profile.conf
 
 # 错误日志
-tail -50 logs/mac-init-*.log
+tail -50 $TMPDIR/macsetup-logs/macsetup-*.log
 
 # Homebrew 状态（如果安装了）
 brew doctor

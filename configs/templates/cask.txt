@@ -1,0 +1,9 @@
+# MacSetup - Homebrew Cask 应用配置
+# 语法: 每行一个应用名，支持 # 注释
+
+# 开发工具
+visual-studio-code     # 代码编辑器
+iterm2                 # 终端模拟器
+
+# 日常应用
+google-chrome          # 浏览器

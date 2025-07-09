@@ -1,23 +1,29 @@
 #!/bin/bash
 
 # =============================================================================
-# Mac Init - 核心工具函数库
+# MacSetup - 核心工具函数库
 # =============================================================================
 
 set -euo pipefail
 
 # 颜色定义
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly NC='\033[0m' # No Color
+if [[ -z "${RED:-}" ]]; then
+    readonly RED='\033[0;31m'
+    readonly GREEN='\033[0;32m'
+    readonly YELLOW='\033[1;33m'
+    readonly BLUE='\033[0;34m'
+    readonly PURPLE='\033[0;35m'
+    readonly CYAN='\033[0;36m'
+    readonly NC='\033[0m' # No Color
+fi
 
 # 全局变量
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-readonly BACKUP_DIR="$HOME/.mac-init-backup-$(date +%Y%m%d_%H%M%S)"
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
+    readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+fi
+if [[ -z "${BACKUP_DIR:-}" ]]; then
+    readonly BACKUP_DIR="$HOME/.macsetup-backup-$(date +%Y%m%d_%H%M%S)"
+fi
 
 # =============================================================================
 # 系统检查函数
@@ -26,7 +32,7 @@ readonly BACKUP_DIR="$HOME/.mac-init-backup-$(date +%Y%m%d_%H%M%S)"
 # 检查是否为macOS系统
 check_macos() {
     if [[ "$OSTYPE" != "darwin"* ]]; then
-        echo -e "${RED}错误: 此脚本仅支持 macOS 系统${NC}" >&2
+        printf "${RED}错误: 此脚本仅支持 macOS 系统${NC}\n" >&2
         return 1
     fi
 }
@@ -38,11 +44,11 @@ check_macos_version() {
     current_version=$(sw_vers -productVersion)
     
     if [[ "$(printf '%s\n' "$min_version" "$current_version" | sort -V | head -n1)" != "$min_version" ]]; then
-        echo -e "${YELLOW}警告: 检测到 macOS $current_version，建议使用 $min_version 及以上版本${NC}" >&2
+        printf "${YELLOW}警告: 检测到 macOS $current_version，建议使用 $min_version 及以上版本${NC}\n" >&2
         return 1
     fi
     
-    echo -e "${GREEN}✓ macOS 版本检查通过: $current_version${NC}"
+    printf "${GREEN}✓ macOS 版本检查通过: $current_version${NC}\n"
     return 0
 }
 
@@ -52,22 +58,22 @@ check_network() {
     
     for host in "${test_hosts[@]}"; do
         if ping -c 1 -W 3000 "$host" &> /dev/null; then
-            echo -e "${GREEN}✓ 网络连接正常${NC}"
+            printf "${GREEN}✓ 网络连接正常${NC}\n"
             return 0
         fi
     done
     
-    echo -e "${RED}错误: 网络连接异常，请检查网络设置${NC}" >&2
+    printf "${RED}错误: 网络连接异常，请检查网络设置${NC}\n" >&2
     return 1
 }
 
 # 检查管理员权限
 check_sudo() {
     if sudo -n true 2>/dev/null; then
-        echo -e "${GREEN}✓ 管理员权限检查通过${NC}"
+        printf "${GREEN}✓ 管理员权限检查通过${NC}\n"
         return 0
     else
-        echo -e "${YELLOW}提示: 某些操作需要管理员权限${NC}"
+        printf "${YELLOW}提示: 某些操作需要管理员权限${NC}\n"
         return 1
     fi
 }
@@ -87,7 +93,7 @@ safe_mkdir() {
     local dir="$1"
     if [[ ! -d "$dir" ]]; then
         mkdir -p "$dir"
-        echo -e "${BLUE}创建目录: $dir${NC}"
+        printf "${BLUE}创建目录: $dir${NC}\n"
     fi
 }
 
@@ -99,7 +105,7 @@ backup_file() {
     if [[ -e "$file" ]]; then
         safe_mkdir "$BACKUP_DIR"
         cp -R "$file" "$BACKUP_DIR/$backup_name"
-        echo -e "${BLUE}备份文件: $file -> $BACKUP_DIR/$backup_name${NC}"
+        printf "${BLUE}备份文件: $file -> $BACKUP_DIR/$backup_name${NC}\n"
         return 0
     fi
     return 1
@@ -112,7 +118,7 @@ create_symlink() {
     local force="${3:-false}"
     
     if [[ ! -e "$source" ]]; then
-        echo -e "${RED}错误: 源文件不存在: $source${NC}" >&2
+        printf "${RED}错误: 源文件不存在: $source${NC}\n" >&2
         return 1
     fi
     
@@ -121,13 +127,13 @@ create_symlink() {
             backup_file "$target"
             rm -rf "$target"
         else
-            echo -e "${YELLOW}目标已存在: $target${NC}"
+            printf "${YELLOW}目标已存在: $target${NC}\n"
             return 1
         fi
     fi
     
     ln -sf "$source" "$target"
-    echo -e "${GREEN}✓ 创建符号链接: $source -> $target${NC}"
+    printf "${GREEN}✓ 创建符号链接: $source -> $target${NC}\n"
 }
 
 # 下载文件
@@ -138,15 +144,15 @@ download_file() {
     
     for ((i=1; i<=max_retries; i++)); do
         if curl -fsSL "$url" -o "$destination"; then
-            echo -e "${GREEN}✓ 下载完成: $destination${NC}"
+            printf "${GREEN}✓ 下载完成: $destination${NC}\n"
             return 0
         else
-            echo -e "${YELLOW}下载失败 (尝试 $i/$max_retries): $url${NC}"
+            printf "${YELLOW}下载失败 (尝试 $i/$max_retries): $url${NC}\n"
             [[ $i -lt $max_retries ]] && sleep 2
         fi
     done
     
-    echo -e "${RED}错误: 下载失败: $url${NC}" >&2
+    printf "${RED}错误: 下载失败: $url${NC}\n" >&2
     return 1
 }
 
@@ -183,7 +189,7 @@ show_menu() {
     shift
     local options=("$@")
     
-    echo -e "\n${CYAN}$title${NC}"
+    printf "\n${CYAN}$title${NC}\n"
     for i in "${!options[@]}"; do
         echo "  $((i+1)). ${options[i]}"
     done
@@ -201,7 +207,7 @@ get_choice() {
             echo "$choice"
             return 0
         else
-            echo -e "${RED}无效选择，请输入 1-$max 之间的数字${NC}"
+            printf "${RED}无效选择，请输入 1-$max 之间的数字${NC}\n"
         fi
     done
 }
@@ -227,7 +233,7 @@ show_progress() {
 
 # 完成进度显示
 finish_progress() {
-    echo -e "\n${GREEN}✓ 完成${NC}\n"
+    printf "\n${GREEN}✓ 完成${NC}\n"
 }
 
 # =============================================================================
@@ -236,10 +242,10 @@ finish_progress() {
 
 # 清理临时文件
 cleanup() {
-    local temp_dir="${1:-/tmp/mac-init-*}"
+    local temp_dir="${1:-/tmp/macsetup-*}"
     if ls $temp_dir 1> /dev/null 2>&1; then
         rm -rf $temp_dir
-        echo -e "${BLUE}清理临时文件${NC}"
+        printf "${BLUE}清理临时文件${NC}\n"
     fi
 }
 

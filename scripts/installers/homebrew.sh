@@ -186,7 +186,7 @@ setup_homebrew_environment() {
     fi
     
     echo "" >> "$shell_config"
-    echo "# Homebrew configuration (added by mac-init)" >> "$shell_config"
+    echo "# Homebrew configuration (added by MacSetup)" >> "$shell_config"
     echo "$env_config" >> "$shell_config"
     
     log_success "已添加 Homebrew 环境变量到: $shell_config"
@@ -252,10 +252,122 @@ is_package_installed() {
     "$HOMEBREW_BIN" list --formula "$package" &> /dev/null
 }
 
-# 检查 Cask 应用是否已安装
+# 获取 cask 应用的预期安装路径
+get_cask_app_path() {
+    local cask="$1"
+    
+    # 尝试从 brew info 获取实际的应用名称
+    local app_info
+    app_info=$("$HOMEBREW_BIN" info --cask "$cask" 2>/dev/null | grep "\.app (App)" | head -1)
+    
+    if [[ -n "$app_info" ]]; then
+        # 提取应用名称 (例如: "Visual Studio Code.app (App)" -> "Visual Studio Code.app")
+        local app_name
+        app_name=$(echo "$app_info" | sed 's/ (App)$//' | xargs)
+        echo "/Applications/$app_name"
+    else
+        # 备用方案：基于 cask 名称推测
+        case "$cask" in
+            "google-chrome")
+                echo "/Applications/Google Chrome.app"
+                ;;
+            "visual-studio-code")
+                echo "/Applications/Visual Studio Code.app"
+                ;;
+            "firefox")
+                echo "/Applications/Firefox.app"
+                ;;
+            "iterm2")
+                echo "/Applications/iTerm.app"
+                ;;
+            "rectangle")
+                echo "/Applications/Rectangle.app"
+                ;;
+            "slack")
+                echo "/Applications/Slack.app"
+                ;;
+            "docker")
+                echo "/Applications/Docker.app"
+                ;;
+            "notion")
+                echo "/Applications/Notion.app"
+                ;;
+            "spotify")
+                echo "/Applications/Spotify.app"
+                ;;
+            "zoom")
+                echo "/Applications/zoom.us.app"
+                ;;
+            "microsoft-teams")
+                echo "/Applications/Microsoft Teams.app"
+                ;;
+            "adobe-acrobat-reader")
+                echo "/Applications/Adobe Acrobat Reader DC.app"
+                ;;
+            "vlc")
+                echo "/Applications/VLC.app"
+                ;;
+            "obsidian")
+                echo "/Applications/Obsidian.app"
+                ;;
+            "discord")
+                echo "/Applications/Discord.app"
+                ;;
+            "telegram")
+                echo "/Applications/Telegram.app"
+                ;;
+            "whatsapp")
+                echo "/Applications/WhatsApp.app"
+                ;;
+            "1password")
+                echo "/Applications/1Password 7 - Password Manager.app"
+                ;;
+            "parallels")
+                echo "/Applications/Parallels Desktop.app"
+                ;;
+            "vmware-fusion")
+                echo "/Applications/VMware Fusion.app"
+                ;;
+            *)
+                # 通用猜测：将 cask 名称转换为应用名称
+                local app_name
+                app_name=$(echo "$cask" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1))substr($i,2)}1')
+                echo "/Applications/$app_name.app"
+                ;;
+        esac
+    fi
+}
+
+# 增强的 Cask 应用安装检测
 is_cask_installed() {
     local cask="$1"
-    "$HOMEBREW_BIN" list --cask "$cask" &> /dev/null
+    
+    # 方法1: 检查 brew 的安装记录 (最准确)
+    if "$HOMEBREW_BIN" list --cask "$cask" &> /dev/null; then
+        return 0
+    fi
+    
+    # 方法2: 检查应用是否存在于 /Applications/
+    local app_path
+    app_path=$(get_cask_app_path "$cask")
+    
+    if [[ -d "$app_path" ]]; then
+        log_debug "发现应用已存在: $app_path (未通过 brew 安装)"
+        return 0
+    fi
+    
+    # 方法3: 检查常见的替代安装位置
+    local app_name
+    app_name=$(basename "$app_path")
+    
+    # 检查用户的 Applications 目录
+    if [[ -d "$HOME/Applications/$app_name" ]]; then
+        log_debug "发现应用已存在: $HOME/Applications/$app_name"
+        return 0
+    fi
+    
+    # 应用未安装
+    return 1
 }
 
 # 安装单个包
@@ -274,6 +386,100 @@ install_package() {
         return 0
     else
         log_error "包安装失败: $package"
+        return 1
+    fi
+}
+
+# 带实时输出的包安装
+install_package_with_output() {
+    local package="$1"
+    local force="${2:-false}"
+    local show_output="${3:-true}"
+    
+    if [[ "$force" != "true" ]] && is_package_installed "$package"; then
+        log_info "包已安装，跳过: $package"
+        return 0
+    fi
+    
+    log_info "正在安装包: $package"
+    
+    # 直接显示 brew 的原始输出
+    if log_command_with_output "$HOMEBREW_BIN install $package" "$show_output" "  "; then
+        log_success "包安装成功: $package"
+        return 0
+    else
+        log_error "包安装失败: $package"
+        return 1
+    fi
+}
+
+# 带实时输出的 Cask 应用安装
+install_cask_with_output() {
+    local cask="$1"
+    local force="${2:-false}"
+    local show_output="${3:-true}"
+    
+    # 检查是否通过 brew 安装
+    if [[ "$force" != "true" ]] && "$HOMEBREW_BIN" list --cask "$cask" &> /dev/null; then
+        log_info "Cask 应用已通过 brew 安装，跳过: $cask"
+        return 0
+    fi
+    
+    # 检查是否通过其他方式安装
+    if [[ "$force" != "true" ]]; then
+        local app_path
+        app_path=$(get_cask_app_path "$cask")
+        
+        if [[ -d "$app_path" ]] || [[ -d "$HOME/Applications/$(basename "$app_path")" ]]; then
+            log_warn "发现应用已存在但未通过 brew 管理: $cask"
+            
+            # 静默模式或强制模式直接跳过
+            if [[ "${QUIET_MODE:-false}" == "true" ]] || [[ "$force" == "true" ]]; then
+                log_info "跳过已存在的应用: $cask"
+                return 0
+            fi
+            
+            # 交互模式询问用户
+            echo "应用 $cask 已存在于:"
+            if [[ -d "$app_path" ]]; then
+                echo "  - $app_path"
+            fi
+            if [[ -d "$HOME/Applications/$(basename "$app_path")" ]]; then
+                echo "  - $HOME/Applications/$(basename "$app_path")"
+            fi
+            echo ""
+            echo "选项:"
+            echo "  1. 跳过安装 (推荐)"
+            echo "  2. 继续通过 brew 安装 (可能会覆盖现有应用)"
+            echo "  3. 跳过所有类似提示"
+            echo ""
+            
+            read -p "请选择 [1/2/3]: " choice
+            case "$choice" in
+                "2")
+                    log_info "用户选择继续安装: $cask"
+                    ;;
+                "3")
+                    log_info "跳过并设置静默模式"
+                    export QUIET_MODE="true"
+                    return 0
+                    ;;
+                *)
+                    log_info "跳过已存在的应用: $cask"
+                    return 0
+                    ;;
+            esac
+        fi
+    fi
+    
+    log_info "正在安装 Cask 应用: $cask"
+    
+    # 直接显示 brew 的原始输出
+    if log_command_with_output "$HOMEBREW_BIN install --cask $cask" "$show_output" "  "; then
+        log_success "Cask 应用安装成功: $cask"
+        return 0
+    else
+        log_error "Cask 应用安装失败: $cask"
         return 1
     fi
 }
@@ -387,8 +593,15 @@ install_packages_serial() {
         ((current++))
         log_progress "$current" "$total" "安装包"
         
-        if ! install_package "$package"; then
-            failed_packages+=("$package")
+        # 根据配置选择是否显示输出
+        if [[ "${SHOW_BREW_OUTPUT:-true}" == "true" ]]; then
+            if ! install_package_with_output "$package" false true; then
+                failed_packages+=("$package")
+            fi
+        else
+            if ! install_package "$package"; then
+                failed_packages+=("$package")
+            fi
         fi
     done
     
@@ -497,8 +710,15 @@ install_homebrew_casks() {
         ((current++))
         log_progress "$current" "$total" "安装 Cask 应用"
         
-        if ! install_cask "$cask"; then
-            failed_casks+=("$cask")
+        # 根据配置选择是否显示输出
+        if [[ "${SHOW_BREW_OUTPUT:-true}" == "true" ]]; then
+            if ! install_cask_with_output "$cask" false true; then
+                failed_casks+=("$cask")
+            fi
+        else
+            if ! install_cask "$cask"; then
+                failed_casks+=("$cask")
+            fi
         fi
     done
     
@@ -574,7 +794,7 @@ set_homebrew_options() {
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     export -f check_homebrew_installed install_homebrew update_homebrew
-    export -f install_package install_cask is_package_installed is_cask_installed
+    export -f install_package install_package_with_output install_cask install_cask_with_output is_package_installed is_cask_installed get_cask_app_path
     export -f install_homebrew_packages install_homebrew_casks setup_homebrew
     export -f set_homebrew_options verify_homebrew_installation
 fi

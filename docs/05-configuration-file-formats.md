@@ -1,8 +1,8 @@
-# Mac Init 配置文件格式说明
+# MacSetup 配置文件格式说明
 
 ## 概述
 
-Mac Init 使用多种格式的配置文件来管理不同类型的设置。本文档详细说明了各种配置文件的格式、语法规则和最佳实践。
+MacSetup 使用多种格式的配置文件来管理不同类型的设置。本文档详细说明了各种配置文件的格式、语法规则和最佳实践。
 
 ## 配置文件类型概览
 
@@ -39,7 +39,7 @@ configs/
 #### 基本格式
 
 ```bash
-# Mac Init - Homebrew 包配置
+# MacSetup - Homebrew 包配置
 # 语法: 每行一个包名，支持 # 注释
 
 # 基础工具
@@ -85,7 +85,7 @@ node              # Node.js ✅
 
 ```bash
 # ========================================
-# Mac Init - 开发者工具包
+# MacSetup - 开发者工具包
 # 维护者: developer@example.com
 # 最后更新: 2024-01-01
 # ========================================
@@ -133,7 +133,7 @@ exa                    # 现代化的 ls
 #### 基本格式
 
 ```bash
-# Mac Init - Homebrew Cask 应用配置
+# MacSetup - Homebrew Cask 应用配置
 # 语法: 每行一个 Cask 应用名，支持 # 注释
 
 # 开发工具
@@ -187,7 +187,7 @@ brew search --cask | head -20
 #### 基本格式
 
 ```bash
-# Mac Init - App Store 应用配置
+# MacSetup - App Store 应用配置
 # 语法: App Store ID:应用名称
 
 # 开发工具
@@ -268,7 +268,7 @@ validate_appstore_config() {
 #### 基本格式
 
 ```bash
-# Mac Init 配置方案: developer
+# MacSetup 配置方案: developer
 # 创建时间: 2024-01-01 12:00:00
 # 描述: 专为开发者设计的完整配置方案
 
@@ -438,7 +438,7 @@ fi
 
 ```bash
 #!/bin/bash
-# Mac Init - 系统配置脚本
+# MacSetup - 系统配置脚本
 # 描述: 配置 macOS 系统设置
 
 set -euo pipefail
@@ -708,7 +708,7 @@ check_config_best_practices() {
     local warnings=0
     
     # 检查是否有文件头注释
-    if ! head -5 "$file" | grep -q "# Mac Init"; then
+    if ! head -5 "$file" | grep -q "# MacSetup"; then
         echo "建议添加文件头注释"
         ((warnings++))
     fi
@@ -794,4 +794,4 @@ VERBOSE_OUTPUT="true"
 USE_CHINA_MIRROR="auto"
 ```
 
-这个配置文件格式说明涵盖了 Mac Init 中所有类型配置文件的详细格式、语法规则和最佳实践，帮助用户正确创建和维护配置文件。
+这个配置文件格式说明涵盖了 MacSetup 中所有类型配置文件的详细格式、语法规则和最佳实践，帮助用户正确创建和维护配置文件。

@@ -1,0 +1,14 @@
+# MacSetup - Homebrew 包配置
+# 语法: 每行一个包名，支持 # 注释
+
+# 基础工具
+git                    # 版本控制系统
+wget                   # 文件下载工具
+curl                   # HTTP客户端
+tree                   # 目录树显示
+jq                     # JSON处理工具
+
+# 开发工具
+node                   # Node.js运行时
+python3                # Python 3
+vim                    # 文本编辑器

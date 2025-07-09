@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# Mac Init - 日志系统
+# MacSetup - 日志系统
 # =============================================================================
 
 set -euo pipefail
@@ -16,16 +16,20 @@ fi
 # =============================================================================
 
 # 日志级别定义
-readonly LOG_LEVEL_DEBUG=0
-readonly LOG_LEVEL_INFO=1
-readonly LOG_LEVEL_WARN=2
-readonly LOG_LEVEL_ERROR=3
-readonly LOG_LEVEL_FATAL=4
+if [[ -z "${LOG_LEVEL_DEBUG:-}" ]]; then
+    readonly LOG_LEVEL_DEBUG=0
+    readonly LOG_LEVEL_INFO=1
+    readonly LOG_LEVEL_WARN=2
+    readonly LOG_LEVEL_ERROR=3
+    readonly LOG_LEVEL_FATAL=4
+fi
 
 # 默认配置
 DEFAULT_LOG_LEVEL=${LOG_LEVEL_INFO}
-DEFAULT_LOG_DIR="${SCRIPT_DIR:-$(pwd)}/logs"
-DEFAULT_LOG_FILE="mac-init-$(date +%Y%m%d_%H%M%S).log"
+# 使用 macOS 临时目录
+DEFAULT_LOG_DIR="${TMPDIR:-/tmp}/macsetup-logs"
+# 改为一天一个文件的格式
+DEFAULT_LOG_FILE="macsetup-$(date +%Y%m%d).log"
 ENABLE_CONSOLE_OUTPUT=true
 ENABLE_FILE_OUTPUT=true
 MAX_LOG_FILES=10
@@ -54,17 +58,22 @@ setup_logging() {
     
     # 创建日志文件并写入头部信息
     if [[ "$ENABLE_FILE_OUTPUT" == "true" ]]; then
+        # 如果是当天第一次运行，创建新文件；否则追加到现有文件
+        if [[ ! -f "$LOG_FILE_PATH" ]]; then
+            {
+                echo "# MacSetup 日志文件 - $(date '+%Y-%m-%d')"
+                echo "# 系统信息: $(uname -a)"
+                echo "# macOS版本: $(sw_vers -productVersion)"
+                echo "# 用户: $(whoami)"
+                echo "# ============================================================================="
+                echo ""
+            } > "$LOG_FILE_PATH"
+        fi
+        
+        # 每次运行时添加会话开始标记
         {
-            echo "# Mac Init 日志文件"
-            echo "# 会话ID: $LOG_SESSION_ID"
-            echo "# 开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-            echo "# 系统信息: $(uname -a)"
-            echo "# macOS版本: $(sw_vers -productVersion)"
-            echo "# 用户: $(whoami)"
-            echo "# 工作目录: $(pwd)"
-            echo "# ============================================================================="
-            echo ""
-        } > "$LOG_FILE_PATH"
+            echo "# 会话开始: $(date '+%Y-%m-%d %H:%M:%S') (PID: $$)"
+        } >> "$LOG_FILE_PATH"
     fi
     
     # 清理旧日志文件
@@ -76,16 +85,16 @@ setup_logging() {
 # 清理旧日志文件
 cleanup_old_logs() {
     local log_dir="$1"
-    local log_pattern="mac-init-*.log"
+    local log_pattern="macsetup-*.log"
     
     # 获取日志文件数量
     local log_count
     log_count=$(find "$log_dir" -name "$log_pattern" -type f 2>/dev/null | wc -l | tr -d ' ')
     
     if [[ $log_count -gt $MAX_LOG_FILES ]]; then
-        # 删除最旧的日志文件
+        # 按日期排序，删除最旧的日志文件
         local files_to_delete=$((log_count - MAX_LOG_FILES))
-        find "$log_dir" -name "$log_pattern" -type f -exec ls -t {} + | tail -n "$files_to_delete" | xargs rm -f
+        find "$log_dir" -name "$log_pattern" -type f | sort | head -n "$files_to_delete" | xargs rm -f
         log_info "清理了 $files_to_delete 个旧日志文件"
     fi
 }
@@ -157,7 +166,7 @@ _log() {
     
     # 控制台输出
     if [[ "$ENABLE_CONSOLE_OUTPUT" == "true" ]]; then
-        echo -e "${color}$formatted_message${NC}" >&2
+        printf "${color}%s${NC}\n" "$formatted_message" >&2
     fi
     
     # 文件输出
@@ -249,6 +258,45 @@ log_command() {
             return 1
         fi
     else
+        if eval "$cmd" &>/dev/null; then
+            log_success "命令执行成功: $cmd"
+            return 0
+        else
+            log_error "命令执行失败: $cmd"
+            return 1
+        fi
+    fi
+}
+
+# 实时输出的命令执行
+log_command_with_output() {
+    local cmd="$1"
+    local show_output="${2:-true}"
+    local prefix="${3:-}"
+    
+    log_debug "执行命令: $cmd"
+    
+    if [[ "$show_output" == "true" ]]; then
+        # 直接显示命令输出，不做任何过滤
+        if [[ -n "$prefix" ]]; then
+            eval "$cmd" 2>&1 | while IFS= read -r line; do
+                echo "$prefix$line"
+            done
+        else
+            eval "$cmd" 2>&1
+        fi
+        
+        local exit_code=${PIPESTATUS[0]}
+        
+        if [[ $exit_code -eq 0 ]]; then
+            log_success "命令执行成功: $cmd"
+            return 0
+        else
+            log_error "命令执行失败: $cmd"
+            return 1
+        fi
+    else
+        # 静默模式
         if eval "$cmd" &>/dev/null; then
             log_success "命令执行成功: $cmd"
             return 0
@@ -351,6 +399,6 @@ check_log_rotation() {
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     export -f setup_logging set_log_level cleanup_old_logs
     export -f log_debug log_info log_success log_warn log_error log_fatal
-    export -f log_step_start log_step_complete log_progress log_command
+    export -f log_step_start log_step_complete log_progress log_command log_command_with_output
     export -f log_statistics show_recent_errors rotate_log check_log_rotation
 fi

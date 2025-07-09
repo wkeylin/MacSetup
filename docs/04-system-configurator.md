@@ -1,8 +1,8 @@
-# Mac Init 系统配置器使用文档
+# MacSetup 系统配置器使用文档
 
 ## 概述
 
-系统配置器是 Mac Init 的重要组件，负责自动配置 macOS 系统设置，包括 Dock、Finder、截图、安全、键盘、触控板等各个方面。它提供了预设配置和完全自定义两种方式，并具备完整的备份恢复功能。
+系统配置器是 MacSetup 的重要组件，负责自动配置 macOS 系统设置，包括 Dock、Finder、截图、安全、键盘、触控板等各个方面。它提供了预设配置和完全自定义两种方式，并具备完整的备份恢复功能。
 
 ## 主要功能
 
@@ -392,7 +392,7 @@ execute_custom_config "configs/system/my-custom-config.sh"
 init_system_backup
 
 # 备份位置
-# ~/.mac-init-backup-YYYYMMDD_HHMMSS/system-defaults/
+# ~/.macsetup-backup-YYYYMMDD_HHMMSS/system-defaults/
 # ├── com.apple.dock.plist
 # ├── com.apple.finder.plist
 # ├── com.apple.screencapture.plist

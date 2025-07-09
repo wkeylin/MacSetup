@@ -1,8 +1,8 @@
-# Mac Init 主入口脚本使用文档
+# MacSetup 主入口脚本使用文档
 
 ## 概述
 
-`init.sh` 是 Mac Init 的主入口脚本，提供完整的 Mac 电脑自动初始化功能。它集成了所有模块，支持交互式和非交互式使用方式。
+`init.sh` 是 MacSetup 的主入口脚本，提供完整的 Mac 电脑自动初始化功能。它集成了所有模块，支持交互式和非交互式使用方式。
 
 ## 基本用法
 
@@ -264,13 +264,13 @@ tail -f logs/debug.log
 
 ```bash
 # 设置默认配置方案
-export MAC_INIT_PROFILE="developer"
+export MACSETUP_PROFILE="developer"
 
 # 跳过确认
-export MAC_INIT_YES="true"
+export MACSETUP_YES="true"
 
 # 启用详细输出
-export MAC_INIT_VERBOSE="true"
+export MACSETUP_VERBOSE="true"
 
 # 然后运行
 ./init.sh
@@ -288,20 +288,20 @@ export MAC_INIT_VERBOSE="true"
 Homebrew 包: 28 个
 Homebrew Cask 应用: 12 个
 
-详细日志: /path/to/logs/mac-init-20240101_120000.log
+详细日志: /tmp/macsetup-logs/macsetup-20240101.log
 
 建议的下一步操作:
 1. 重启终端或重新登录以确保环境变量生效
 2. 运行 brew doctor 检查 Homebrew 状态
 3. 检查系统偏好设置确认配置已生效
-4. 备份文件位置: /Users/username/.mac-init-backup-20240101_120000
+4. 备份文件位置: /Users/username/.macsetup-backup-20240101_120000
 ```
 
 ### 日志文件位置
 
-- **默认位置：** `logs/mac-init-YYYYMMDD_HHMMSS.log`
+- **默认位置：** `$TMPDIR/macsetup-logs/macsetup-YYYYMMDD.log`
 - **自定义位置：** 通过 `--log-file` 指定
-- **备份位置：** `~/.mac-init-backup-YYYYMMDD_HHMMSS/`
+- **备份位置：** `~/.macsetup-backup-YYYYMMDD_HHMMSS/`
 
 ## 错误处理
 
@@ -330,7 +330,7 @@ Homebrew Cask 应用: 12 个
 
 - **中断安装：** 按 `Ctrl+C`
 - **恢复安装：** 重新运行相同命令，脚本会跳过已安装的内容
-- **完全重置：** 删除 `~/.mac-init-backup-*` 目录和相关配置
+- **完全重置：** 删除 `~/.macsetup-backup-*` 目录和相关配置
 
 ## 最佳实践
 

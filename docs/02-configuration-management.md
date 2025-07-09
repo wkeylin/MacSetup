@@ -1,8 +1,8 @@
-# Mac Init 配置管理使用文档
+# MacSetup 配置管理使用文档
 
 ## 概述
 
-配置管理系统是 Mac Init 的核心组件，负责管理软件包列表、系统设置、配置方案等。它提供了灵活的配置方式，支持预设方案和完全自定义。
+配置管理系统是 MacSetup 的核心组件，负责管理软件包列表、系统设置、配置方案等。它提供了灵活的配置方式，支持预设方案和完全自定义。
 
 ## 配置文件结构
 
@@ -45,7 +45,7 @@ list_profiles
 
 # 手动创建配置文件
 cat > configs/profiles/my-profile.conf << 'EOF'
-# Mac Init 配置方案: my-profile
+# MacSetup 配置方案: my-profile
 # 创建时间: 2024-01-01 12:00:00
 
 # 软件包配置文件
@@ -531,7 +531,7 @@ PACKAGES_FILES="core.txt,languages.txt,databases.txt"
 ```bash
 # 在配置文件中记录版本信息
 # configs/profiles/developer.conf
-# Mac Init 配置方案: developer
+# MacSetup 配置方案: developer
 # 版本: 2.1.0
 # 兼容性: macOS 11.0+
 # 最后测试: 2024-01-01

@@ -1,17 +1,17 @@
-# Mac Init 常见问题解答
+# MacSetup 常见问题解答
 
 ## 🤔 使用前的疑问
 
-### Q: Mac Init 安全吗？会不会损坏我的 Mac？
+### Q: MacSetup 安全吗？会不会损坏我的 Mac？
 **A: 完全安全！** 
 - ✅ 所有操作都有备份，可以随时恢复
 - ✅ 只安装来自官方渠道的软件
 - ✅ 提供预览模式，你可以先看看会做什么
 - ✅ 如果不确定，先用 `./init.sh --dry-run` 预览
 
-### Q: 我的 Mac 已经用了一段时间，还能用 Mac Init 吗？
+### Q: 我的 Mac 已经用了一段时间，还能用 MacSetup 吗？
 **A: 当然可以！**
-- Mac Init 会自动跳过已经安装的软件
+- MacSetup 会自动跳过已经安装的软件
 - 现有的文件和设置会被备份
 - 建议先用预览模式看看会改变什么
 
@@ -24,7 +24,7 @@
 
 ### Q: 需要花钱吗？
 **A: 大部分是免费的**
-- ✅ Mac Init 本身完全免费
+- ✅ MacSetup 本身完全免费
 - ✅ 大多数软件都是免费的开源软件
 - ⚠️ 某些专业软件可能需要付费（如 Adobe 软件）
 - ℹ️ 会在安装前告知哪些软件需要付费
@@ -45,7 +45,7 @@
 
 ### Q: 某些软件安装失败了
 **A: 这很正常，不用担心**
-- Mac Init 会继续安装其他软件
+- MacSetup 会继续安装其他软件
 - 最后会告诉你哪些安装失败了
 - 你可以稍后手动安装失败的软件
 - 查看 [常见安装失败原因](#安装失败的原因)
@@ -109,13 +109,13 @@ source ~/.zshrc
 ## 🔧 系统设置问题
 
 ### Q: Dock 或桌面看起来不一样了
-**A: Mac Init 优化了系统设置**
+**A: MacSetup 优化了系统设置**
 - 这些都是为了更好的使用体验
 - 如果不喜欢，可以手动改回来
 - 或者运行 `./init.sh --restore-settings`
 
 ### Q: 能看到很多之前看不到的文件
-**A: Mac Init 启用了显示隐藏文件**
+**A: MacSetup 启用了显示隐藏文件**
 - 这对开发者很有用
 - 如果不需要，可以关闭：按 Cmd+Shift+. 切换显示
 
@@ -129,7 +129,7 @@ source ~/.zshrc
 ## 🗑 卸载和恢复
 
 ### Q: 如何撤销所有更改？
-**A: Mac Init 提供了完整的恢复功能**
+**A: MacSetup 提供了完整的恢复功能**
 
 1. **恢复系统设置**：
 ```bash
@@ -274,7 +274,7 @@ export https_proxy=http://proxy.company.com:8080
 ## 📱 不同 Mac 型号的问题
 
 ### Q: M1/M2 Mac 特殊问题
-**A: Mac Init 自动处理架构差异**
+**A: MacSetup 自动处理架构差异**
 - 自动选择 ARM 版本的软件
 - 某些老软件可能通过 Rosetta 运行
 - 性能通常会更好
@@ -308,7 +308,7 @@ export https_proxy=http://proxy.company.com:8080
 ./init.sh --show-errors
 
 # 导出完整日志
-cp logs/最新日志文件.log ~/Desktop/
+cp $TMPDIR/macsetup-logs/macsetup-*.log ~/Desktop/
 ```
 
 3. **获取帮助**：
@@ -319,13 +319,13 @@ cp logs/最新日志文件.log ~/Desktop/
 ### 紧急情况
 
 **如果 Mac 出现严重问题**：
-1. 立即停止运行 Mac Init
+1. 立即停止运行 MacSetup
 2. 重启 Mac 到安全模式（开机时按住 Shift）
 3. 运行 `./init.sh --emergency-restore`
 4. 联系技术支持
 
-**记住**：绝大多数问题都可以轻松解决，不要担心！Mac Init 设计得很安全，有完整的恢复机制。
+**记住**：绝大多数问题都可以轻松解决，不要担心！MacSetup 设计得很安全，有完整的恢复机制。
 
 ---
 
-**还有其他问题？** 查看 [进阶使用指南](user-advanced.md) 或 [联系我们](mailto:support@mac-init.com)。
+**还有其他问题？** 查看 [进阶使用指南](user-advanced.md)

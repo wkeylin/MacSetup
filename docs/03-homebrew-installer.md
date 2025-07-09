@@ -1,8 +1,8 @@
-# Mac Init Homebrew 安装器使用文档
+# MacSetup Homebrew 安装器使用文档
 
 ## 概述
 
-Homebrew 安装器是 Mac Init 的核心模块，负责自动安装和管理 Homebrew、命令行工具包、GUI 应用程序等。它支持智能网络检测、并行安装、错误恢复等高级功能。
+Homebrew 安装器是 MacSetup 的核心模块，负责自动安装和管理 Homebrew、命令行工具包、GUI 应用程序等。它支持智能网络检测、并行安装、错误恢复等高级功能。
 
 ## 主要功能
 

@@ -1,8 +1,8 @@
-# Mac Init 日志系统使用文档
+# MacSetup 日志系统使用文档
 
 ## 概述
 
-日志系统 (`scripts/core/logger.sh`) 是 Mac Init 的重要组件，提供了完整的日志记录、管理和分析功能。它支持多级别日志、彩色输出、文件轮转、日志分析等高级特性。
+日志系统 (`scripts/core/logger.sh`) 是 MacSetup 的重要组件，提供了完整的日志记录、管理和分析功能。它支持多级别日志、彩色输出、文件轮转、日志分析等高级特性。
 
 ## 主要功能
 
@@ -394,7 +394,7 @@ done
 #### 日志文件初始化
 
 ```bash
-# 使用默认设置
+# 使用默认设置（日志写入 $TMPDIR/macsetup-logs/macsetup-YYYYMMDD.log）
 setup_logging
 
 # 自定义日志目录和文件名
@@ -470,7 +470,7 @@ log_statistics
 
 # 示例输出:
 # === 日志统计信息 ===
-# 日志文件: /path/to/mac-init-20240101_120000.log
+# 日志文件: /tmp/macsetup-logs/macsetup-20240101.log
 # 总行数: 1250
 # INFO: 856
 # WARN: 23

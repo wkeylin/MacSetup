@@ -45,7 +45,7 @@ jobs:
           else
             echo "## What's Changed" > CHANGELOG.md
             echo "" >> CHANGELOG.md
-            echo "Initial release of Mac Init - macOS automation tool" >> CHANGELOG.md
+            echo "Initial release of MacSetup - macOS automation tool" >> CHANGELOG.md
             echo "" >> CHANGELOG.md
             git log --pretty=format:"* %s (%h)" >> CHANGELOG.md
           fi
@@ -97,7 +97,7 @@ jobs:
           # 创建自解压安装脚本
           cat > dist/MacSetup-installer-${{ steps.version.outputs.version }}.sh << 'EOF'
           #!/bin/bash
-          # Mac Init Self-Extracting Installer
+          # MacSetup Self-Extracting Installer
           # Version: ${{ steps.version.outputs.version }}
           # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
           
@@ -113,23 +113,23 @@ jobs:
           
           # 配置
           readonly VERSION="${{ steps.version.outputs.version }}"
-          readonly INSTALL_DIR="${MAC_INIT_DIR:-$HOME/MacSetup}"
+          readonly INSTALL_DIR="${MACSETUP_DIR:-$HOME/MacSetup}"
           readonly TEMP_DIR="/tmp/MacSetup-installer-$$"
           
           # 显示欢迎信息
           show_welcome() {
               echo -e "${CYAN}"
               cat << 'WELCOME_EOF'
-             __  __              ___       _ _   
-            |  \/  |            |_ _|_ __ (_) |_ 
-            | |\/| | __ _  ___   | || '_ \| | __|
-            | |  | |/ _` |/ __|  | || | | | | |_ 
-            |_|  |_|\__,_|\___| |___|_| |_|_|\__|
-                                                
-                  Mac 电脑自动初始化工具
+           __  __            ____       _               
+          |  \/  | __ _  ___/ ___|  ___| |_ _   _ _ __   
+          | |\/| |/ _` |/ __\___ \ / _ \ __| | | | '_ \  
+          | |  | | (_| | (__ ___) |  __/ |_| |_| | |_) | 
+          |_|  |_|\__,_|\___|____/ \___|\__|\__,_| .__/  
+                                                 |_|     
+                    Mac 电脑自动初始化工具
           WELCOME_EOF
               echo -e "${NC}"
-              echo -e "${BLUE}Mac Init Installer ${VERSION}${NC}"
+              echo -e "${BLUE}MacSetup Installer ${VERSION}${NC}"
               echo -e "${BLUE}一键配置你的 Mac，从全新系统到完美工作环境${NC}"
               echo ""
           }
@@ -202,7 +202,7 @@ jobs:
           # 显示完成信息
           show_completion() {
               echo ""
-              echo -e "${GREEN}🎉 Mac Init 安装完成！${NC}"
+              echo -e "${GREEN}🎉 MacSetup 安装完成！${NC}"
               echo ""
               echo -e "${CYAN}快速开始:${NC}"
               echo -e "  cd $INSTALL_DIR"
@@ -299,7 +299,7 @@ jobs:
         run: |
           cat > dist/install.sh << 'EOF'
           #!/bin/bash
-          # Mac Init Quick Installer
+          # MacSetup Quick Installer
           # Downloads and runs the latest installer
           
           set -euo pipefail
@@ -308,7 +308,7 @@ jobs:
           readonly VERSION="${{ steps.version.outputs.version }}"
           readonly INSTALLER_URL="https://github.com/${REPO}/releases/download/${VERSION}/MacSetup-installer-${VERSION}.sh"
           
-          echo "Downloading Mac Init ${VERSION}..."
+          echo "Downloading MacSetup ${VERSION}..."
           
           if command -v curl >/dev/null 2>&1; then
               curl -fsSL "$INSTALLER_URL" -o MacSetup-installer.sh

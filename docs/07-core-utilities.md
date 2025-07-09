@@ -1,8 +1,8 @@
-# Mac Init 核心工具函数库文档
+# MacSetup 核心工具函数库文档
 
 ## 概述
 
-核心工具函数库 (`scripts/core/utils.sh`) 是 Mac Init 的基础模块，提供了系统检查、文件操作、用户交互、进度显示等基本功能。所有其他模块都依赖于这个库的功能。
+核心工具函数库 (`scripts/core/utils.sh`) 是 MacSetup 的基础模块，提供了系统检查、文件操作、用户交互、进度显示等基本功能。所有其他模块都依赖于这个库的功能。
 
 ## 功能分类
 
@@ -390,7 +390,7 @@ main_menu() {
         "退出"
     )
     
-    show_menu "Mac Init 主菜单" "${options[@]}"
+    show_menu "MacSetup 主菜单" "${options[@]}"
     local choice
     choice=$(get_choice ${#options[@]})
     
@@ -511,7 +511,7 @@ cleanup [temp_pattern]
 ```
 
 **参数**:
-- `temp_pattern`: 临时文件模式（默认: "/tmp/mac-init-*"）
+- `temp_pattern`: 临时文件模式（默认: "/tmp/macsetup-*"）
 
 **示例**:
 ```bash

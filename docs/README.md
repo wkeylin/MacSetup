@@ -1,19 +1,19 @@
-# Mac Init 文档中心
+# MacSetup 文档中心
 
-欢迎来到 Mac Init 文档中心！这里有你需要的所有使用指南，从新手入门到高级定制，应有尽有。
+欢迎来到 MacSetup 文档中心！这里有你需要的所有使用指南，从新手入门到高级定制，应有尽有。
 
 ## 🚀 新手必读
 
 ### [📖 快速入门指南](user-quickstart.md) ⭐️ **推荐首次阅读**
 5分钟快速上手，了解基本用法和选择适合你的配置。
 
-**适合**：第一次使用 Mac Init 的用户
+**适合**：第一次使用 MacSetup 的用户
 **内容**：基本操作、场景选择、常用命令、问题解决
 
 ### [📋 使用手册](user-guide.md) 
 完整的使用说明，涵盖所有基础功能。
 
-**适合**：想全面了解 Mac Init 功能的用户
+**适合**：想全面了解 MacSetup 功能的用户
 **内容**：详细命令说明、自定义配置、维护更新
 
 ---
@@ -59,7 +59,7 @@
 ## 🔧 开发者资源
 
 ### 技术文档（开发者专用）
-如果你想了解 Mac Init 的内部实现或进行功能扩展：
+如果你想了解 MacSetup 的内部实现或进行功能扩展：
 
 - [主入口脚本技术文档](01-main-script-usage.md)
 - [配置管理技术文档](02-configuration-management.md)  
@@ -87,7 +87,7 @@
 ### 我遇到了问题
 1. 首先查看 [常见问题解答](user-faq.md)
 2. 如果没找到答案，查看 [完整故障排除指南](06-troubleshooting-guide.md)
-3. 还是解决不了？[提交问题](https://github.com/your-repo/mac-init/issues)
+3. 还是解决不了？[提交问题](https://github.com/wkeylin/macsetup/issues)
 
 ### 我想了解技术细节
 1. 查看 [技术文档列表](#开发者资源)
@@ -122,7 +122,7 @@
 ### 🎯 实践建议
 - 建议先用 `--dry-run` 预览再实际执行
 - 重要操作前先备份配置
-- 遇到问题不要慌，Mac Init 设计得很安全
+- 遇到问题不要慌，MacSetup 设计得很安全
 
 ### 🤝 社区参与
 - 分享你的使用经验和配置
@@ -134,12 +134,11 @@
 ## 📞 获取帮助
 
 - **常见问题**：查看 [FAQ](user-faq.md)
-- **技术问题**：[GitHub Issues](https://github.com/your-repo/mac-init/issues)
-- **功能建议**：[GitHub Discussions](https://github.com/your-repo/mac-init/discussions)
-- **社区讨论**：[官方论坛](https://forum.mac-init.com)
+- **技术问题**：[GitHub Issues](https://github.com/wkeylin/macsetup/issues)
+- **功能建议**：[GitHub Discussions](https://github.com/wkeylin/macsetup/discussions)
 
 ---
 
-**现在就开始使用 Mac Init，让你的 Mac 变得更强大！** 🚀
+**现在就开始使用 MacSetup，让你的 Mac 变得更强大！** 🚀
 
 建议从 [快速入门指南](user-quickstart.md) 开始你的旅程。

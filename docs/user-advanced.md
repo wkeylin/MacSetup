@@ -1,6 +1,6 @@
-# Mac Init 进阶使用指南
+# MacSetup 进阶使用指南
 
-当你熟悉了基础操作后，Mac Init 还提供了许多高级功能，让你可以打造完全个性化的 Mac 环境。
+当你熟悉了基础操作后，MacSetup 还提供了许多高级功能，让你可以打造完全个性化的 Mac 环境。
 
 ## 🎯 创建你的专属配置
 
@@ -331,7 +331,7 @@ osascript -e 'tell application "System Events" to tell appearance preferences to
 
 ## 🚀 高级自动化
 
-### 让 Mac Init 更智能
+### 让 MacSetup 更智能
 
 #### 条件化安装
 ```bash
@@ -510,7 +510,7 @@ echo "✅ 性能分析完成！"
 #### 配置版本控制
 ```bash
 # 将配置文件加入 Git 管理
-cd mac-init
+cd macsetup
 git init
 git add configs/
 git commit -m "我的 Mac 配置初始版本"
@@ -545,7 +545,7 @@ nano backup-everything.sh
 #!/bin/bash
 # 完整备份脚本
 
-BACKUP_DIR="$HOME/mac-init-backup-$(date +%Y%m%d)"
+BACKUP_DIR="$HOME/macsetup-backup-$(date +%Y%m%d)"
 mkdir -p "$BACKUP_DIR"
 
 echo "💾 开始完整备份..."
@@ -620,7 +620,7 @@ echo "✅ 分享包创建完成: $SHARE_DIR"
 #### 贡献到社区
 ```bash
 # 提交你的配置到社区仓库
-git fork https://github.com/mac-init/community-configs
+git fork https://github.com/macsetup/community-configs
 git clone https://github.com/你的用户名/community-configs
 cd community-configs
 
@@ -635,7 +635,7 @@ git push origin main
 
 ---
 
-**恭喜！** 你现在已经掌握了 Mac Init 的高级用法。你可以：
+**恭喜！** 你现在已经掌握了 MacSetup 的高级用法。你可以：
 - 🎯 创建完全个性化的配置
 - 🏢 为团队建立标准化环境  
 - 🔄 自动化维护和更新
